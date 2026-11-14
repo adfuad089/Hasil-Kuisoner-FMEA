@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Gabungan FMEA RPA</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#fff;color:#222;font-size:12px}
+#page{padding:12px;box-sizing:border-box}
+h1{font-size:18px;margin:0 0 6px}h2{font-size:14px;margin:16px 0 8px}p{margin:5px 0}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:12px}
+th,td{border:1px solid #999;padding:4px 6px;vertical-align:top}th{background:#e8eaed;text-align:center}
+td.n{text-align:center}
+.main{min-width:1400px}
+select{width:150px;padding:4px;font-size:12px;border:1px solid #bbb;border-radius:5px;background:#fff}
+.high{background:#f8c9c4;font-weight:bold}.mid{background:#fde9b0}.low{background:#cfeccf}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0;position:sticky;top:0;background:#fff;padding:6px 0;z-index:5}
+.tabs button{background:#5f6368;color:#fff;border:0;border-radius:4px;padding:8px 12px;font-size:12px;font-weight:bold;cursor:pointer}
+.tabs button.on{background:#1a73e8}
+.panel{display:none}.panel.on{display:block}
+.rt td,.rt th{text-align:center}
+#zb{position:fixed;right:10px;bottom:10px;z-index:9;display:flex;gap:4px;align-items:center;background:#fff;border:1px solid #bbb;border-radius:8px;padding:5px;box-shadow:0 2px 8px #0003}
+#zb button{background:#5f6368;color:#fff;border:0;border-radius:4px;padding:6px 12px;font-size:14px;cursor:pointer}#zb span{min-width:44px;text-align:center;font-size:13px}
+</style></head><body>
+<div id="zb"><button onclick="zoom(-10)">−</button><span id="zv">100%</span><button onclick="zoom(10)">+</button><button onclick="zoom(0)">Reset</button></div>
+<div id="page">
+<h1>Model Gabungan FMEA – Rumah Potong Ayam (RPA)</h1>
+<p>Penilaian Severity (S), Occurrence (O), dan Detection (D) oleh 5 responden untuk 15 line proses. Nilai gabungan adalah rata-rata S, O, dan D kelima responden; RPN keseluruhan = rata-rata S × rata-rata O × rata-rata D. Pilihan dapat diubah dan hasil gabungan ikut diperbarui.</p>
+<h2>Keterangan Peringkat (1–10)</h2>
+<div class="wrap"><table class="rt"><thead><tr><th rowspan="2">Peringkat</th><th colspan="3">Peringkat Linguistik</th></tr><tr><th>S (Severity)</th><th>O (Occurrence)</th><th>D (Detection)</th></tr></thead><tbody id="rtb"></tbody></table></div>
+<div class="tabs" id="tabs"></div>
+<div id="panels"></div>
+</div>
+<script>
+const RT=[["Tidak ada","Sangat mustahil","Hampir pasti"],["Sangat lemah","Mustahil","Sangat tinggi"],["Lemah","Jarang","Besar"],["Sangat rendah","Tidak sering","Penting"],["Rendah","Rendah","Sedang"],["Cukup","Cukup","Menengah"],["Tinggi","Cukup tinggi","Langka"],["Sangat tinggi","Tinggi","Jarang"],["Berbahaya","Ekstrem","Sangat jarang"],["Sangat ekstrem","Sangat ekstrem","Tidak ada"]];
+const D=[["1A", "transportasi ayam hidup ke RPA", "Pengangkutan", "Karkas memar, rendemen turun", "Proses transportasi buruk", "Pencatatan waktu tiba", "Standar kepadatan krat, lama dan jalur pengiriman"], ["2A", "Pencatatan dan Pemeriksaan antemortem", "Penerimaan Ayam", "Kualitas daging turun, cacat meningkat", "Ayam dari supplier dalam kondisi buruk", "Pemeriksaan antemortem", "Seleksi dan evaluasi supplier, kriteria penerimaan"], ["3A", "Penurunan krat dari truk ke area hanging", "Penurunan Krat", "Memar, nilai jual turun", "Penurunan krat saat proses kurang hati-hati", "Tidak ada", "Prosedur penurunan krat, alat bantu angkat"], ["4A", "Penimbangan dan menggantung ayam", "Penurunan dan Pemindahan", "Karkas diturunkan grade", "Human error saat pemindahan", "Teguran lisan", "Standar penanganan krat dan ayam, pelatihan handling"], ["5A", "Stunning, Penyembelihan, Penirisan darah dan Scalding", "Scalding", "Kulit rusak atau bulu sulit dicabut", "Suhu scalding tidak terpantau akurat", "Termostat otomatis", "Pemantauan suhu berkala dengan termometer terkalibrasi"], ["6A", "Ayam masuk mesin plucker", "Plucking", "Tampilan produk turun", "Mesin plucker rusak", "Pengecekan visual", "Perbaikan mesin dan inspeksi jari karet plucker"], ["7A", "Plucking dan eviserasi", "Eviserasi dan Plucking", "Sisa jeroan atau bulu tertinggal", "Variasi ukuran ayam tidak seragam", "Grading setelah chilling", "Sortir ukuran sebelum hanging, atur mesin per ukuran"], ["8A", "Pemotongan kepala, pelubangan kloaka, pendongkelan jeroan dan pelepasan usus/hati", "Eviserasi", "Karkas diturunkan grade, risiko kontaminasi", "Pekerja kurang pengalaman", "Pengawasan supervisor", "Pendampingan operator baru oleh operator senior"], ["8B", "Pemotongan kepala, pelubangan kloaka, pendongkelan jeroan dan pelepasan usus/hati", "Eviserasi", "Karkas diturunkan grade, risiko kontaminasi", "Kurangnya pelatihan", "Briefing awal shift", "Pelatihan berkala dengan jadwal dan evaluasi"], ["8C", "Pemotongan kepala, pelubangan kloaka, pendongkelan jeroan dan pelepasan usus/hati", "Eviserasi", "Karkas diturunkan grade, risiko kontaminasi", "Kelelahan kerja", "Pekerjaan yang monoton", "Rotasi jenis dan jadwal kerja"], ["9A", "Lintas proses, scalding, plucker, eviserasi", "Seluruh mesin", "Cacat meningkat dan downtime", "Perawatan mesin kurang", "Perbaikan saat rusak", "Jadwal perawatan preventif dan checklist harian"], ["9B", "Lintas proses, scalding, plucker, eviserasi", "Seluruh mesin", "Cacat tidak terdeteksi cepat", "Kalibrasi mesin tidak rutin", "Kalibrasi tidak terjadwal", "Jadwal kalibrasi dan catatan hasil kalibrasi"], ["9C", "Lintas proses, scalding, plucker, eviserasi", "Seluruh mesin", "Cacat meningkat dan downtime", "Suku cadang mesin sudah tua", "Penggantian saat rusak", "Program penggantian suku cadang terjadwal"], ["10A", "Seluruh area produksi", "Area Produksi", "Waktu proses lama, risiko silang", "Tata letak area kerja kurang mendukung", "Tidak ada", "Evaluasi dan penataan ulang alur kerja"], ["10B", "Seluruh area produksi", "Area Produksi", "Ketelitian operator turun", "Kondisi ruang produksi tidak sesuai", "Pembersihan rutin", "Perbaikan pencahayaan, suhu, dan lantai"]];const SOD={"1": [[4, 2, 5], [1, 3, 3], [5, 4, 3], [3, 3, 4], [7, 3, 5], [5, 5, 6], [7, 3, 6], [5, 5, 4], [5, 4, 4], [5, 3, 3], [5, 6, 6], [3, 5, 6], [5, 5, 6], [7, 4, 5], [5, 3, 1]], "2": [[5, 2, 4], [1, 4, 4], [5, 5, 2], [4, 3, 3], [7, 4, 4], [6, 6, 5], [7, 3, 5], [5, 5, 4], [5, 4, 4], [5, 2, 4], [6, 7, 5], [3, 5, 6], [5, 5, 6], [7, 4, 5], [5, 3, 1]], "3": [[7, 2, 3], [6, 4, 3], [7, 4, 3], [5, 3, 3], [6, 4, 4], [7, 6, 5], [7, 3, 5], [7, 5, 4], [7, 4, 4], [7, 2, 4], [6, 6, 5], [5, 5, 6], [6, 4, 6], [5, 4, 5], [6, 3, 1]], "4": [[7, 1, 3], [6, 4, 2], [5, 4, 3], [5, 3, 2], [6, 4, 4], [6, 5, 6], [7, 3, 5], [5, 5, 4], [7, 4, 4], [6, 2, 4], [6, 6, 4], [5, 5, 6], [7, 4, 6], [5, 4, 5], [6, 3, 1]], "5": [[4, 2, 3], [1, 3, 2], [2, 2, 3], [2, 4, 1], [7, 4, 4], [5, 5, 6], [3, 2, 5], [4, 5, 3], [7, 4, 3], [6, 2, 4], [7, 6, 4], [7, 5, 5], [5, 3, 6], [6, 4, 5], [5, 3, 1]]};const NR=5;
+const $=id=>document.getElementById(id);
+$("rtb").innerHTML=RT.map((r,i)=>`<tr><td>${i+1}</td><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+const sel=(k,v,r,i)=>`<select data-r="${r}" data-i="${i}" data-k="${k}"><option value="">-- pilih --</option>${RT.map((x,j)=>`<option value="${j+1}"${j+1===v?" selected":""}>${j+1} – ${x[k]}</option>`).join("")}</select>`;
+for(let r=1;r<=NR;r++){
+  $("tabs").insertAdjacentHTML("beforeend",`<button id="tb${r}" onclick="show('${r}')">Responden ${r}</button>`);
+  let h=`<div class="panel" id="pn${r}"><h2>Form FMEA – Responden ${r}</h2><div class="wrap"><table class="main"><thead><tr><th>LINE</th><th>Component and Function</th><th>Potential Failure Mode</th><th>Potential Effect(s) of Failure</th><th>Severity</th><th>Potential Cause(s) of Failure</th><th>Occurrence</th><th>Current Control Prevention</th><th>Detection</th><th>RPN</th><th>Recommended Action</th></tr></thead><tbody>`;
+  D.forEach((d,i)=>{const [s,o,dd]=SOD[r][i];
+    h+=`<tr id="row${r}_${i}"><td>${d[0]}</td><td>${d[1]}</td><td>${d[2]}</td><td>${d[3]}</td><td class="n">${sel(0,s,r,i)}</td><td>${d[4]}</td><td class="n">${sel(1,o,r,i)}</td><td>${d[5]}</td><td class="n">${sel(2,dd,r,i)}</td><td class="n rpn">-</td><td>${d[6]}</td></tr>`;});
+  h+=`</tbody></table></div></div>`;
+  $("panels").insertAdjacentHTML("beforeend",h);
+}
+$("tabs").insertAdjacentHTML("beforeend",`<button id="tbG" onclick="show('G')">Hasil Gabungan</button>`);
+$("panels").insertAdjacentHTML("beforeend",`<div class="panel" id="pnG"><div id="resG"></div></div>`);
+function show(id){
+  for(let r=1;r<=NR;r++){$("pn"+r).classList.toggle("on",String(r)===id);$("tb"+r).classList.toggle("on",String(r)===id);}
+  $("pnG").classList.toggle("on",id==="G");$("tbG").classList.toggle("on",id==="G");window.scrollTo(0,0);
+}
+const cls=x=>x>=125?"high":x>=80?"mid":"low";
+function hitung(){
+  const v=[];let lengkap=true;
+  for(let r=1;r<=NR;r++){v[r]=[];
+    D.forEach((d,i)=>{
+      const s=[...document.querySelectorAll(`#row${r}_${i} select`)].map(x=>+x.value);
+      const c=document.querySelector(`#row${r}_${i} .rpn`);
+      if(s.every(x=>x>0)){const p=s[0]*s[1]*s[2];c.textContent=p;c.className="n rpn "+cls(p);v[r][i]=s;}
+      else{c.textContent="-";c.className="n rpn";v[r][i]=null;lengkap=false;}
+    });}
+  if(!lengkap){$("resG").innerHTML="<p><b>Hasil gabungan memerlukan semua penilaian S, O, D dari 5 responden terisi.</b></p>";return;}
+  const rows=D.map((d,i)=>{
+    const m=[0,1,2].map(k=>{let t=0;for(let r=1;r<=NR;r++)t+=v[r][i][k];return t/NR;});
+    const rr=[];for(let r=1;r<=NR;r++)rr.push(v[r][i][0]*v[r][i][1]*v[r][i][2]);
+    return {line:d[0],mode:d[2],S:m[0],O:m[1],D:m[2],rpn:m[0]*m[1]*m[2],rr,avg:rr.reduce((a,b)=>a+b,0)/NR};
+  });
+  const rk=[...rows].sort((a,b)=>b.rpn-a.rpn);
+  let h=`<h2>Hasil Penyebaran Kuesioner (Rata-rata S, O, D dan RPN)</h2><div class="wrap"><table><thead><tr><th>LINE</th><th>Potential Failure Mode</th><th>Rata² S</th><th>Rata² O</th><th>Rata² D</th><th>RPN Keseluruhan</th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th></tr></thead><tbody>`;
+  rows.forEach(r=>{h+=`<tr><td>${r.line}</td><td>${r.mode}</td><td class="n">${r.S.toFixed(1)}</td><td class="n">${r.O.toFixed(1)}</td><td class="n">${r.D.toFixed(1)}</td><td class="n ${cls(r.rpn)}">${r.rpn.toFixed(2)}</td>${r.rr.map(x=>`<td class="n">${x}</td>`).join("")}</tr>`;});
+  h+=`</tbody></table></div><h2>Ranking RPN</h2><div class="wrap"><table><thead><tr><th>LINE</th><th>Potential Failure</th><th>Severity</th><th>Occurrence</th><th>Detection</th><th>RPN</th><th>Prioritas</th></tr></thead><tbody>`;
+  rk.forEach((r,i)=>{h+=`<tr><td>${r.line}</td><td>${r.mode}</td><td class="n">${r.S.toFixed(1)}</td><td class="n">${r.O.toFixed(1)}</td><td class="n">${r.D.toFixed(1)}</td><td class="n ${cls(r.rpn)}">${r.rpn.toFixed(2)}</td><td class="n">${i+1}</td></tr>`;});
+  h+=`</tbody></table></div><p>Warna RPN: merah ≥ 125, kuning 80–124, hijau &lt; 80.</p>`;
+  $("resG").innerHTML=h;
+}
+document.addEventListener("change",hitung);
+hitung();show("G");
+let Z=100;
+function setZ(v){Z=Math.min(200,Math.max(25,Math.round(v)));const pg=$("page");if("zoom" in pg.style)pg.style.zoom=Z/100;else{pg.style.transform="scale("+Z/100+")";pg.style.transformOrigin="0 0";}$("zv").textContent=Z+"%";}
+function zoom(d){setZ(d===0?100:Z+d);}
+</script></body></html>
